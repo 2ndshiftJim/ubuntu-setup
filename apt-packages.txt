@@ -8,6 +8,7 @@ unzip
 build-essential
 tmux
 gh
+keychain
 # CLI comfort
 ripgrep
 fd-find
