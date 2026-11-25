@@ -16,7 +16,7 @@ cp local.env.example local.env      # optional, machine-specific values (gitigno
 | `repos` | adds HashiCorp + Kubernetes apt repos; installs terraform, vault, kubectl |
 | `releases` | downloads GitHub release binaries in `manifest/tools.psv` into `~/Opt/<name>-<version>`, verifies SHA-256, symlinks into `~/.local/bin` |
 | `links` | `bat` -> `batcat`, `fd` -> `fdfind` |
-| `dotfiles` | clones kickstart.nvim to `~/.config/nvim` (if absent), adds a bashrc snippet |
+| `dotfiles` | clones kickstart.nvim to `~/.config/nvim` (if absent), adds a bashrc snippet (PATH, zoxide, keychain loads your GitHub SSH key once per boot) |
 
 Options: `--steps dirs,releases`, `--only resvg,yazi`, `--dry-run`.
 `OPT_DIR` and `BIN_DIR` env vars override install locations (useful for testing).
@@ -26,6 +26,7 @@ Edit its row in `manifest/tools.psv` (version, and the new SHA-256 from the rele
 
 ## Not covered (manual)
 - A Nerd Font on the Windows side, selected in the terminal profile.
+- Creating the SSH key (`ssh-keygen -t ed25519 -a 100 -f ~/.ssh/id_ed25519_github_personal`, with a passphrase) and adding the public key to GitHub. This needs a real terminal for the passphrase prompt, so it is not automated.
 - `gh auth login`, `vault login`, and any credentials.
 - A container runtime for `nerdctl` (containerd, rootless setup).
 

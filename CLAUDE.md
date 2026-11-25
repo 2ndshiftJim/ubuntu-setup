@@ -8,7 +8,7 @@ Rerunnable bash automation that sets up Ubuntu / WSL2-Ubuntu (x86_64) work machi
 - `manifest/tools.psv` — pipe-delimited release-binary manifest (one tool per row, pinned version + SHA-256).
 - `apt-packages.txt` — packages from Ubuntu's own repos.
 - `scripts/apt-repos.sh` — third-party apt repos (HashiCorp, Kubernetes) with key handling.
-- `dotfiles/` — bashrc snippet; kickstart.nvim is cloned by the `dotfiles` step.
+- `dotfiles/` — bashrc snippet (PATH, zoxide, keychain to persist the ssh-agent and load the GitHub key, optional `local.env`); kickstart.nvim is cloned by the `dotfiles` step.
 - `.claude/skills/add-software/SKILL.md` — procedure for adding new software (use `/add-software`).
 
 ## Conventions
@@ -24,6 +24,7 @@ Rerunnable bash automation that sets up Ubuntu / WSL2-Ubuntu (x86_64) work machi
 
 ## Environment gotchas (learned the hard way)
 - Claude Code's shell has no TTY: `sudo` cannot prompt. Give the user the exact sudo command (or a script to read first) to run in another terminal, then verify afterwards.
+- The GitHub SSH key is passphrase-protected and unlocked by keychain in the user's own terminals. Claude Code's shell has no ssh-agent or TTY, so Claude can commit but cannot `git push`; the user pushes from their own terminal. Verify a push afterwards with `git ls-remote https://github.com/<user>/<repo>.git` (public repo, no auth needed).
 - Debian/Ubuntu rename some binaries: `bat`→`batcat`, `fd`→`fdfind`. The `links` step handles this.
 - Ubuntu 26.04 has no `libfuse2`: AppImages are extracted (`--appimage-extract`), not mounted.
 - `gh release download` demands auth even for public repos; use `curl` with the direct release URL.
