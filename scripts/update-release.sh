@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Update one release-binary tool in manifest/tools.psv to its latest release and install it.
+# Update one release-binary tool (in manifest/tools.psv or a profile's tools.psv) to its latest release and install it.
 #
 #   scripts/update-release.sh NAME [--compute-hash] [--dry-run]
 #
@@ -14,8 +14,9 @@
 set -euo pipefail
 
 ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
-MANIFEST="${MANIFEST:-$ROOT/manifest/tools.psv}"
-export MANIFEST
+# shellcheck source=../lib.sh
+. "$ROOT/lib.sh"
+load_config
 
 NAME="" COMPUTE=0 DRY=0
 while [ $# -gt 0 ]; do
@@ -31,6 +32,13 @@ done
 [ -n "$NAME" ] || { echo "usage: update-release.sh NAME [--compute-hash] [--dry-run]" >&2; exit 2; }
 [[ $NAME =~ ^[A-Za-z0-9._-]+$ ]] || { echo "bad tool name" >&2; exit 2; }
 
+# Find the manifest layer (base or profile) that defines this tool.
+MFILE=""
+while IFS= read -r f; do
+  if awk -F'|' -v n="$NAME" '$1==n{found=1} END{exit !found}' "$f"; then MFILE=$f; break; fi
+done < <(manifest_files)
+[ -n "$MFILE" ] || { echo "$NAME: not in the manifest for the selected profiles (PROFILES='${PROFILES}')"; exit 0; }
+
 row=$(bash "$ROOT/scripts/check-updates.sh" --kind release --only "$NAME" | awk -F'\t' 'NR>1')
 [ -n "$row" ] || { echo "$NAME: already at latest (or not in manifest)"; exit 0; }
 IFS=$'\t' read -r _ _ cur latest status flags newsha link _ <<<"$row"
@@ -38,7 +46,7 @@ IFS=$'\t' read -r _ _ cur latest status flags newsha link _ <<<"$row"
 [[ $flags == *asset-missing* ]] && { echo "$NAME: latest release $latest has no matching asset; update the manifest URL by hand (see $link)" >&2; exit 1; }
 
 # Manifest row for this tool (url template drives the download for --compute-hash).
-mrow=$(awk -F'|' -v n="$NAME" '$1==n' "$MANIFEST")
+mrow=$(awk -F'|' -v n="$NAME" '$1==n' "$MFILE")
 url_tpl=$(cut -d'|' -f5 <<<"$mrow")
 url=${url_tpl//\{version\}/$latest}
 note=""
@@ -56,17 +64,17 @@ echo "$NAME: $cur -> $latest  (sha256 $newsha)"
 echo "release notes: $link"
 [ "$DRY" = 1 ] && { echo "[dry-run] no changes made"; exit 0; }
 
-backup=$(mktemp); cp "$MANIFEST" "$backup"
+backup=$(mktemp); cp "$MFILE" "$backup"
 out=$(mktemp)
 awk -F'|' -v OFS='|' -v n="$NAME" -v v="$latest" -v s="$newsha" -v note="$note" '
   # drop a stale "# NAME: ... digest ..." comment; re-add below only if we computed the hash
   $0 ~ "^# " n ": .*digest" { next }
   $1 == n { if (note != "") print note; $2 = v; $4 = s }
   { print }' "$backup" >"$out"
-cat "$out" >"$MANIFEST"; rm -f "$out"
+cat "$out" >"$MFILE"; rm -f "$out"
 
 if ! "$ROOT/install.sh" --steps releases --only "$NAME"; then
-  cp "$backup" "$MANIFEST"; rm -f "$backup"
+  cp "$backup" "$MFILE"; rm -f "$backup"
   echo "$NAME: install failed; manifest restored" >&2
   exit 1
 fi

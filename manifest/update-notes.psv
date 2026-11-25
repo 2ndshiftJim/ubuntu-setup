@@ -5,11 +5,4 @@ tree-sitter|Can change grammar/parser ABI; neovim treesitter parsers may need re
 yazi|Config/plugin format changes between releases; `yazi` and `ya` must be updated together (both are linked from one archive).
 resvg|Rendering output can change slightly; yazi SVG previews depend on it.
 imagemagick|AppImage is extracted (about 100 MB+ per version); policy/format defaults can change between versions.
-nerdctl|Must stay compatible with the containerd it talks to; check the container runtime version before upgrading.
-talosctl|Keep within the supported version skew of your Talos clusters; upgrading ahead of the cluster can use newer API fields.
-kubectl|Supported skew is one minor version either side of the cluster's API server; do not move ahead of your clusters blindly.
-kubectl-minor|Moves the pinned Kubernetes apt repo to a new minor; check cluster version skew first. Needs apt-repos.sh edit (K8S_MINOR) and a sudo rerun; the Kubernetes key fingerprint is not pinned.
-terraform|State files and provider locks can be upgraded irreversibly by a newer Terraform; teammates on older versions may then be unable to use the state. Check required_version constraints.
-vault|CLI/server version skew can matter; check the server version you talk to before upgrading.
-golang-go|Toolchain change affects builds; go.mod `toolchain`/`go` lines may trigger downloads of other versions.
 ffmpeg|Large dependency set; yazi video previews rely on it.

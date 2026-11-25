@@ -21,10 +21,12 @@
 set -euo pipefail
 
 ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
-MANIFEST="${MANIFEST:-$ROOT/manifest/tools.psv}"
-NOTES="${NOTES:-$ROOT/manifest/update-notes.psv}"
-APT_LIST="$ROOT/apt-packages.txt"
+# shellcheck source=../lib.sh
+. "$ROOT/lib.sh"
+load_config   # PROFILES, K8S_MINOR from local.env decide what is checked
 APT_REPOS="$ROOT/scripts/apt-repos.sh"
+mapfile -t MANIFESTS < <(manifest_files)
+if [ -n "${NOTES:-}" ]; then NOTE_FILES=("$NOTES"); else mapfile -t NOTE_FILES < <(layer_files manifest/update-notes.psv update-notes.psv); fi
 
 ALL=0 KIND="" ONLY=""
 while [ $# -gt 0 ]; do
@@ -47,7 +49,7 @@ api() { # GET a GitHub API path; token (if any) is sent only to api.github.com
   curl -fsS --max-time 20 -H 'Accept: application/vnd.github+json' "${auth[@]}" "https://api.github.com/$1"
 }
 
-note_for() { awk -F'|' -v n="$1" '$1==n{print $2; exit}' "$NOTES" 2>/dev/null || true; }
+note_for() { awk -F'|' -v n="$1" '$1==n{print $2; exit}' "${NOTE_FILES[@]}" 2>/dev/null || true; }
 
 newer() { # true if $2 sorts strictly after $1 by version order
   [ "$1" != "$2" ] && [ "$(printf '%s\n%s\n' "$1" "$2" | sort -V | tail -n1)" = "$2" ]
@@ -111,16 +113,10 @@ check_releases() {
       [ -z "$digest" ] && flags+=(no-digest)
     fi
     emit release "$name" "$version" "$latest" update "$(join_flags "${flags[@]}")" "$digest" "$link"
-  done 3<"$MANIFEST"
+  done 3< <(cat "${MANIFESTS[@]}")
 }
 
-# ---------- apt (Ubuntu + vendor repos) ----------
-managed_apt_packages() {
-  grep -vE '^\s*(#|$)' "$APT_LIST"
-  # vendor-repo packages: the final `apt install -y ...` line in apt-repos.sh
-  sed -n 's/^sudo apt install -y //p' "$APT_REPOS" | tr ' ' '\n'
-}
-
+# ---------- apt (Ubuntu + vendor repos; managed_apt_packages is in lib.sh) ----------
 check_apt() {
   local -a extra=()
   local stamp=/var/lib/apt/periodic/update-stamp
@@ -157,8 +153,9 @@ check_apt() {
 # ---------- Kubernetes apt repo minor stream ----------
 check_k8s() {
   want_name kubectl || return 0
+  vendor_repos | grep -qx kubernetes || return 0   # only machines whose profiles use the k8s repo
   local cur next major minor
-  cur=$(sed -n 's/^K8S_MINOR="\(v[0-9.]*\)".*/\1/p' "$APT_REPOS")
+  cur=${K8S_MINOR:-$(sed -n 's/^K8S_DEFAULT_MINOR="\(v[0-9.]*\)".*/\1/p' "$APT_REPOS")}
   [ -n "$cur" ] || return 0
   major=${cur#v}; major=${major%%.*}; minor=${cur##*.}
   next="v$major.$((minor + 1))"

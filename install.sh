@@ -5,7 +5,9 @@
 #   ./install.sh --dry-run           print what would happen, change nothing
 #   ./install.sh --steps dirs,releases
 #   ./install.sh --only resvg,yazi   limit the releases step to these tools
+#   ./install.sh --profile k8s,dev   add profiles (profiles/NAME) on top of the base
 #
+# Profiles can also be set with PROFILES=... in local.env (gitignored); --profile overrides it.
 # Steps (in order): dirs, apt, repos, releases, links, dotfiles
 set -euo pipefail
 
@@ -13,7 +15,7 @@ ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 # shellcheck source=lib.sh
 . "$ROOT/lib.sh"
 
-MANIFEST="${MANIFEST:-$ROOT/manifest/tools.psv}"
+load_config
 STEPS="dirs,apt,repos,releases,links,dotfiles"
 ONLY=""
 
@@ -22,12 +24,13 @@ while [ $# -gt 0 ]; do
     --dry-run) DRY_RUN=1 ;;
     --steps) STEPS=$2; shift ;;
     --only) ONLY=$2; shift ;;
-    -h|--help) sed -n '2,10p' "${BASH_SOURCE[0]}"; exit 0 ;;
+    --profile|--profiles) PROFILES=$2; shift ;;
+    -h|--help) sed -n '2,12p' "${BASH_SOURCE[0]}"; exit 0 ;;
     *) die "unknown argument: $1" ;;
   esac
   shift
 done
-export DRY_RUN OPT_DIR BIN_DIR
+export DRY_RUN OPT_DIR BIN_DIR PROFILES
 
 want() { [[ ",$STEPS," == *",$1,"* ]]; }
 
@@ -37,21 +40,30 @@ preflight() {
   . /etc/os-release
   [ "${ID:-}" = ubuntu ] || warn "untested on ${ID:-unknown}; this is written for Ubuntu"
   if grep -qi microsoft /proc/version 2>/dev/null; then log "WSL detected"; fi
+  profile_dirs >/dev/null   # fail early on an unknown profile
+  log "profiles: ${PROFILES:-(base only)}"
   [ "$(uname -m)" = x86_64 ] || die "manifest only has x86_64 assets (found $(uname -m))"
 }
 
 step_dirs() {
   log "creating directory layout"
-  [ "$DRY_RUN" = 1 ] && { echo "[dry-run] mkdir -p ~/{Opt,Tools,Apps,Configuration_management,Shared_repos,...}"; return; }
-  cd "$HOME"
-  mkdir -p Opt Tools/{claude,keeper,sysdig} Apps/template/{dev,prod} \
-    Configuration_management/template/{dev,prod} Shared_repos
+  local -a dirs=(Opt Shared_repos)
+  local f d
+  while IFS= read -r f; do
+    while IFS= read -r d; do
+      [[ $d == /* || $d == *..* ]] && die "dirs.txt entries must be relative to \$HOME without '..': $d"
+      dirs+=("$d")
+    done < <(grep -vE '^\s*(#|$)' "$f" || true)
+  done < <(layer_files "" dirs.txt)
+  if [ "$DRY_RUN" = 1 ]; then echo "[dry-run] mkdir -p (under ~) ${dirs[*]}"; return; fi
+  (cd "$HOME" && mkdir -p "${dirs[@]}")
 }
 
 step_apt() {
   log "installing apt packages"
-  local pkgs
-  pkgs=$(grep -vE '^\s*(#|$)' "$ROOT/apt-packages.txt" | tr '\n' ' ')
+  local pkgs f
+  pkgs=$(while IFS= read -r f; do grep -vE '^\s*(#|$)' "$f" || true; done \
+           < <(layer_files apt-packages.txt apt-packages.txt) | sort -u | tr '\n' ' ')
   if [ "$DRY_RUN" = 1 ]; then echo "[dry-run] sudo apt install -y $pkgs"; return; fi
   sudo apt update
   # shellcheck disable=SC2086
@@ -59,19 +71,25 @@ step_apt() {
 }
 
 step_repos() {
-  log "configuring vendor apt repos (HashiCorp, Kubernetes)"
-  if [ "$DRY_RUN" = 1 ]; then echo "[dry-run] bash scripts/apt-repos.sh"; return; fi
-  bash "$ROOT/scripts/apt-repos.sh"
+  local vendors; vendors=$(vendor_repos | tr '\n' ' ')
+  if [ -z "${vendors// /}" ]; then log "no vendor apt repos requested by profiles; skipping"; return; fi
+  log "configuring vendor apt repos: $vendors"
+  if [ "$DRY_RUN" = 1 ]; then echo "[dry-run] bash scripts/apt-repos.sh $vendors"; return; fi
+  # shellcheck disable=SC2086
+  bash "$ROOT/scripts/apt-repos.sh" $vendors
 }
 
 step_releases() {
-  log "installing release binaries from $MANIFEST"
-  local name version type sha url links
+  local -a files; mapfile -t files < <(manifest_files)
+  log "installing release binaries from ${#files[@]} manifest file(s)"
+  local name version type sha url links seen=","
   while IFS='|' read -r -u 3 name version type sha url links; do
     [[ -z $name || $name == \#* ]] && continue
+    [[ $seen == *",$name,"* ]] && die "tool '$name' is defined in more than one manifest layer"
+    seen+="$name,"
     if [ -n "$ONLY" ] && [[ ",$ONLY," != *",$name,"* ]]; then continue; fi
     install_release "$name" "$version" "$type" "$sha" "$url" "$links"
-  done 3<"$MANIFEST"
+  done 3< <(cat "${files[@]}")
 }
 
 step_links() {
@@ -87,7 +105,9 @@ step_links() {
 step_dotfiles() {
   log "installing dotfiles"
   if [ "$DRY_RUN" = 1 ]; then echo "[dry-run] kickstart.nvim -> ~/.config/nvim; bashrc snippet"; return; fi
-  if [ ! -e "$HOME/.config/nvim" ]; then
+  if [ "${KICKSTART:-1}" = 0 ]; then
+    log "KICKSTART=0; skipping kickstart.nvim"
+  elif [ ! -e "$HOME/.config/nvim" ]; then
     git clone --depth 1 https://github.com/nvim-lua/kickstart.nvim.git "$HOME/.config/nvim"
   else
     log "~/.config/nvim exists; leaving it alone"

@@ -23,6 +23,3 @@ ffmpeg
 7zip
 poppler-utils
 wl-clipboard
-# Professional
-golang-go
-glab

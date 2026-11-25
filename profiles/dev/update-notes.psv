@@ -1,0 +1,2 @@
+# Same format as manifest/update-notes.psv.
+golang-go|Toolchain change affects builds; go.mod `toolchain`/`go` lines may trigger downloads of other versions.

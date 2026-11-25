@@ -1,0 +1,4 @@
+# vendor|packages installed from it (space-separated). Which vendors a machine uses is chosen
+# by repos.txt in a profile; the repo/key setup lives in scripts/apt-repos.sh.
+hashicorp|terraform vault
+kubernetes|kubectl

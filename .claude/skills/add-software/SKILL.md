@@ -21,21 +21,25 @@ Check in this order and tell the user which you chose and why:
 
 Never invent an origin: confirm the package/asset exists before editing files.
 
+## 1b. Base or profile?
+
+Decide where the software belongs. **Base** (`apt-packages.txt`, `manifest/tools.psv`) is for tools every machine should get. Anything tied to a role or purpose (cloud/k8s, a language toolchain, a short-lived machine's job) goes in a **profile**: `profiles/NAME/` if it is generic enough to push, `profiles.local/NAME/` (gitignored) if not. Use the same file names inside the profile (`apt-packages.txt`, `tools.psv`, `update-notes.psv`, `repos.txt`). Ask the user if unsure, and create the profile (and mention adding it to `PROFILES` in `local.env`) if it does not exist yet. Where this skill below says `apt-packages.txt` or `manifest/tools.psv`, use the chosen layer's file. Test profile changes with `./install.sh --dry-run --profile NAME`.
+
 ## 2. Handle known origins
 
 ### apt (Ubuntu repos)
-- Append the package to `apt-packages.txt` under a fitting comment group.
+- Append the package to the chosen layer's `apt-packages.txt` under a fitting comment group.
 - Install requires sudo, which this shell can't prompt for. Give the user: `sudo apt install -y <pkg>` to run in another terminal. Then verify with `dpkg -l <pkg>` and `command -v <binary>`; run `<binary> --version`.
 
 ### Vendor apt repo
-- Extend `scripts/apt-repos.sh` following the existing pattern: fetch the key over HTTPS, **pin the fingerprint from the vendor's official page** (WebFetch it; confirm the current key, check for rotations), abort on mismatch, write a `signed-by` source file. Add the package to the final `apt install` line.
+- Extend `scripts/apt-repos.sh` following the existing pattern: fetch the key over HTTPS, **pin the fingerprint from the vendor's official page** (WebFetch it; confirm the current key, check for rotations), abort on mismatch, write a `signed-by` source file. Add the vendor to `manifest/vendor-repos.psv` (`vendor|packages`), add an `add_<vendor>` function plus a `case` arm in `scripts/apt-repos.sh`, and list the vendor in the owning profile's `repos.txt`.
 - Show the user the script diff before they run it with sudo.
 
 ### Official release binary
 1. Find the latest release and the right asset: `curl -s https://api.github.com/repos/OWNER/REPO/releases/latest` and parse with `python3 -I` (the `digest` field is the SHA-256). Pick `x86_64`/`amd64` Linux assets.
 2. Download into a fresh directory (not the repo), and compute `sha256sum`. Compare to the published digest, or a vendor `SHA256SUMS` file. If nothing is published, say so explicitly and ask the user whether to pin a locally computed hash.
 3. Inspect the archive (`tar -tzf`, `unzip -l`) to learn the binary's path. Choose a `type`: `tar.gz | gz | zip | raw | appimage`.
-4. Add a row to `manifest/tools.psv`: `name|version|type|sha256|url with {version}|path-in-dir:linkname[,more]`.
+4. Add a row to the chosen layer's `tools.psv` (`manifest/tools.psv` for base): `name|version|type|sha256|url with {version}|path-in-dir:linkname[,more]`.
 5. Test, never against the real install first: `OPT_DIR=$TMP/Opt BIN_DIR=$TMP/bin ./install.sh --steps releases --only <name>` (temp dir from the scratchpad), run the binary's version command. Then run for real: `./install.sh --steps releases --only <name>`.
 6. Note caveats (e.g. needs a daemon, config, or auth the user must do manually).
 

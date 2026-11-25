@@ -1,0 +1,2 @@
+# Kubernetes / infrastructure tooling from Ubuntu's repos (none yet; terraform, vault and
+# kubectl come from the vendor repos listed in repos.txt).
