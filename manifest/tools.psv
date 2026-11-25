@@ -11,3 +11,4 @@ bin|0.30.0|raw|5fb80bf9741d7b7c01f3ac6768494c13067ccb215c6d5cdf2d0173b8ca111411|
 tlrc|1.13.1|tar.gz|a0d7d963f2bced8a4fa7ab1a42f24140abdb40ba6033f0996dea2e826e341819|https://github.com/tldr-pages/tlrc/releases/download/v{version}/tlrc-v{version}-x86_64-unknown-linux-gnu.tar.gz|tldr:tldr
 nerdctl|2.4.2|tar.gz|41a66995888043c0ba05f8061574eaba1b9e06b9b21c2a238215179df2728d3f|https://github.com/containerd/nerdctl/releases/download/v{version}/nerdctl-{version}-linux-amd64.tar.gz|nerdctl:nerdctl
 talosctl|1.14.7|raw|823deb86e20d79f08d000b266e63e4bffc772ee80364ce405bad5659bcacfb18|https://github.com/siderolabs/talos/releases/download/v{version}/talosctl-linux-amd64|talosctl-linux-amd64:talosctl
+leaf|1.29.3|raw|4037cbe69a24820921ad56f2c43595c52563ec57ffce80e9b9cf53d2e2c40cf7|https://github.com/RivoLink/leaf/releases/download/{version}/leaf-linux-x86_64|leaf-linux-x86_64:leaf
