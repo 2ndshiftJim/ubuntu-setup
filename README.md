@@ -21,8 +21,14 @@ cp local.env.example local.env      # optional, machine-specific values (gitigno
 Options: `--steps dirs,releases`, `--only resvg,yazi`, `--dry-run`.
 `OPT_DIR` and `BIN_DIR` env vars override install locations (useful for testing).
 
-## Upgrading a tool
-Edit its row in `manifest/tools.psv` (version, and the new SHA-256 from the release's published digest), rerun `./install.sh --steps releases`.
+## Updating
+```
+scripts/check-updates.sh                 # what has a newer version (read-only, no sudo)
+scripts/update-release.sh NAME           # bump one release binary: manifest row + install, rolls back on failure
+bash scripts/apt-update.sh --all         # upgrade managed apt packages (sudo; or list package names)
+```
+In Claude Code, `/update-software` runs the check, warns about downsides (major bumps, very new releases, per-tool caveats in `manifest/update-notes.psv`), asks which updates to apply, and applies them.
+Manual route: edit the row in `manifest/tools.psv` (version, and the new SHA-256 from the release's published digest), rerun `./install.sh --steps releases`.
 
 ## Not covered (manual)
 - A Nerd Font on the Windows side, selected in the terminal profile.

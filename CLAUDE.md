@@ -10,6 +10,11 @@ Rerunnable bash automation that sets up Ubuntu / WSL2-Ubuntu (x86_64) work machi
 - `scripts/apt-repos.sh` — third-party apt repos (HashiCorp, Kubernetes) with key handling.
 - `dotfiles/` — bashrc snippet (PATH, zoxide, keychain to persist the ssh-agent and load the GitHub key, optional `local.env`); kickstart.nvim is cloned by the `dotfiles` step.
 - `.claude/skills/add-software/SKILL.md` — procedure for adding new software (use `/add-software`).
+- `.claude/skills/update-software/SKILL.md` — check everything for updates, warn about downsides, ask which to apply, apply (use `/update-software`).
+- `scripts/check-updates.sh` — read-only TSV report of available updates (release manifest via GitHub latest release, apt via `apt list --upgradable`, next Kubernetes minor stream). Emits risk flags and joins `manifest/update-notes.psv` caveats.
+- `scripts/update-release.sh NAME [--compute-hash] [--dry-run]` — bumps one manifest row (version + digest), installs, restores the manifest if the install fails.
+- `scripts/apt-update.sh PKG...|--all` — sudo wrapper that only upgrades managed apt packages; run by the user in their own terminal.
+- `manifest/update-notes.psv` — per-tool upgrade caveats shown by the update check. Add a row when you learn a downside.
 
 ## Conventions
 - Install layout: versioned directory under `~/Opt`, symlink into `~/.local/bin`. Upgrading = change the manifest row and rerun.
