@@ -1,0 +1,13 @@
+# name|version|type|sha256|url template ({version} is substituted)|links (path-in-dir:linkname,...)
+# Hashes: GitHub's published asset digests, except where noted.
+# To upgrade a tool: change version, url if needed, and the sha256, then rerun install.sh.
+neovim|0.12.6|tar.gz|474430d53e6264f6d6dd18db42d6dc9df3a1b56ca9e88a325bbf860e1a811d87|https://github.com/neovim/neovim/releases/download/v{version}/nvim-linux-x86_64.tar.gz|nvim-linux-x86_64/bin/nvim:nvim
+# tree-sitter: release publishes no digest; this hash was computed locally on first download over HTTPS.
+tree-sitter|0.27.2|gz|7ed56d152c52437397b9fcaa43cf341f49933cecc1ca291843f0d347c6e2cb3a|https://github.com/tree-sitter/tree-sitter/releases/download/v{version}/tree-sitter-linux-x64.gz|tree-sitter-linux-x64:tree-sitter
+resvg|0.50.0|tar.gz|5d1c9ffd43c82fb802d92cef8100055c612cd3e248d5a787c20079293a456e21|https://github.com/linebender/resvg/releases/download/v{version}/resvg-linux-x86_64.tar.gz|resvg:resvg
+imagemagick|7.1.2-36|appimage|68cca0053a8f82206e72400014f32f4b654e9807f45928a2325a1d14d695fb3a|https://github.com/ImageMagick/ImageMagick/releases/download/{version}/ImageMagick-{version}-x86_64.AppImage|squashfs-root/AppRun:magick
+yazi|26.9.1|zip|a02fe91d3304294048c681f010f1100856872a4e98ecf6927328e888d40a6ad2|https://github.com/sxyazi/yazi/releases/download/v{version}/yazi-x86_64-unknown-linux-gnu.zip|yazi-x86_64-unknown-linux-gnu/yazi:yazi,yazi-x86_64-unknown-linux-gnu/ya:ya
+bin|0.30.0|raw|5fb80bf9741d7b7c01f3ac6768494c13067ccb215c6d5cdf2d0173b8ca111411|https://github.com/marcosnils/bin/releases/download/v{version}/bin_{version}_linux_amd64|bin_{version}_linux_amd64:bin
+tlrc|1.13.1|tar.gz|a0d7d963f2bced8a4fa7ab1a42f24140abdb40ba6033f0996dea2e826e341819|https://github.com/tldr-pages/tlrc/releases/download/v{version}/tlrc-v{version}-x86_64-unknown-linux-gnu.tar.gz|tldr:tldr
+nerdctl|2.4.2|tar.gz|41a66995888043c0ba05f8061574eaba1b9e06b9b21c2a238215179df2728d3f|https://github.com/containerd/nerdctl/releases/download/v{version}/nerdctl-{version}-linux-amd64.tar.gz|nerdctl:nerdctl
+talosctl|1.14.7|raw|823deb86e20d79f08d000b266e63e4bffc772ee80364ce405bad5659bcacfb18|https://github.com/siderolabs/talos/releases/download/v{version}/talosctl-linux-amd64|talosctl-linux-amd64:talosctl

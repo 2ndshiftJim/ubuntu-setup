@@ -1,0 +1,27 @@
+# Installed from Ubuntu's own repos (security-updated). One per line.
+# Base / build (needed by neovim kickstart, unzip for yazi zips)
+ca-certificates
+curl
+git
+gnupg
+unzip
+build-essential
+tmux
+gh
+# CLI comfort
+ripgrep
+fd-find
+fzf
+zoxide
+eza
+bat
+gum
+jq
+# yazi preview dependencies
+ffmpeg
+7zip
+poppler-utils
+wl-clipboard
+# Professional
+golang-go
+glab
